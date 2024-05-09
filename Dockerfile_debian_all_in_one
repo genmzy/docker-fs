@@ -1,0 +1,47 @@
+FROM debian:buster
+# MAINTAINER jincy <jincy@zenitera.com>
+
+ADD libks.tar.gz /usr/src/libs/
+ADD sofia-sip.tar.gz /usr/src/libs/
+ADD spandsp.tar.gz /usr/src/libs/
+ADD signalwire-c.tar.gz /usr/src/libs/
+
+RUN sed -i 's/deb.debian.org/mirrors.ustc.edu.cn/g' /etc/apt/sources.list && DEBIAN_FRONTEND=noninteractive apt-get update -yq \
+ && DEBIAN_FRONTEND=noninteractive apt-get install -yq sngrep vim gnupg2 wget lsb-release make cmake \
+ && wget --http-user=zht_pkg --http-password=pat_Dn7AjMXzmgTYkAfugDCTL6Ys -O /usr/share/keyrings/signalwire-freeswitch-repo.gpg https://freeswitch.signalwire.com/repo/deb/debian-release/signalwire-freeswitch-repo.gpg \
+ && echo "machine freeswitch.signalwire.com login signalwire password pat_1X8EQXH6EvgajWaBVWSJCG51" > /etc/apt/auth.conf \
+ && echo "deb [signed-by=/usr/share/keyrings/signalwire-freeswitch-repo.gpg] https://freeswitch.signalwire.com/repo/deb/debian-release/ `lsb_release -sc` main" > /etc/apt/sources.list.d/freeswitch.list \
+ && echo "deb-src [signed-by=/usr/share/keyrings/signalwire-freeswitch-repo.gpg] https://freeswitch.signalwire.com/repo/deb/debian-release/ `lsb_release -sc` main" >> /etc/apt/sources.list.d/freeswitch.list\
+ && DEBIAN_FRONTEND=noninteractive apt-get update -yq && DEBIAN_FRONTEND=noninteractive apt-get build-dep freeswitch -yq\
+ && cd /usr/src/libs/libks && cmake . -DCMAKE_INSTALL_PREFIX=/usr -DWITH_LIBBACKTRACE=1 && make install && make clean\
+ && cd /usr/src/libs/sofia-sip &&./bootstrap.sh\
+ && ./configure CFLAGS="-g -ggdb" --with-pic --with-glib=no --without-doxygen --disable-stun --prefix=/usr\
+ && make -j`nproc --all` && make install && make clean\
+ && cd /usr/src/libs/spandsp && ./bootstrap.sh\
+ && ./configure CFLAGS="-g -ggdb" --with-pic --prefix=/usr && make -j`nproc --all`\
+ && make install && make clean\
+ && cd /usr/src/libs/signalwire-c && PKG_CONFIG_PATH=/usr/lib/pkgconfig cmake . -DCMAKE_INSTALL_PREFIX=/usr && make install && make clean && rm -fr /usr/src/libs/* && apt-get clean
+
+#RUN sed -i 's/deb.debian.org/mirrors.ustc.edu.cn/g' /etc/apt/sources.list && apt-get update\
+ #&& DEBIAN_FRONTEND=noninteractive apt-get upgrade -yq\
+ #&& DEBIAN_FRONTEND=noninteractive apt-get -yq install git gnupg2 wget lsb-release\
+ #&& wget -O /etc/apt/trusted.gpg.d/freeswitch-archive-keyring.gpg https://zht_pkg:pat_Dn7AjMXzmgTYkAfugDCTL6Ys@files.freeswitch.org/repo/deb/debian-release/freeswitch-archive-keyring.gpg\
+ #&& echo "deb [signed-by=/etc/apt/trusted.gpg.d/freeswitch-archive-keyring.gpg] https://zht_pkg:pat_Dn7AjMXzmgTYkAfugDCTL6Ys@files.freeswitch.org/repo/deb/debian-release/ `lsb_release -sc` main" > /etc/apt/sources.list.d/freeswitch.list\
+ #&& echo "deb-src [signed-by=/etc/apt/trusted.gpg.d/freeswitch-archive-keyring.gpg] https://zht_pkg:pat_Dn7AjMXzmgTYkAfugDCTL6Ys@files.freeswitch.org/repo/deb/debian-release/ `lsb_release -sc` main" >> /etc/apt/sources.list.d/freeswitch.list\
+ #&& apt-get update && DEBIAN_FRONTEND=noninteractive apt-get upgrade -yq && DEBIAN_FRONTEND=noninteractive apt-get -yq build-dep freeswitch
+
+
+#RUN cd /usr/src/libs/libks && cmake . -DCMAKE_INSTALL_PREFIX=/usr -DWITH_LIBBACKTRACE=1 && make install && make clean\
+ #&& cd /usr/src/libs/sofia-sip &&./bootstrap.sh\
+ #&& ./configure CFLAGS="-g -ggdb" --with-pic --with-glib=no --without-doxygen --disable-stun --prefix=/usr\
+ #&& make -j`nproc --all` && make install && make clean\
+ #&& cd /usr/src/libs/spandsp && ./bootstrap.sh\
+ #&& ./configure CFLAGS="-g -ggdb" --with-pic --prefix=/usr && make -j`nproc --all`\
+ #&& make install && make clean\
+ #&& cd /usr/src/libs/signalwire-c && PKG_CONFIG_PATH=/usr/lib/pkgconfig cmake . -DCMAKE_INSTALL_PREFIX=/usr && make install && make clean && rm -fr /usr/src/libs/* && apt-get clean
+
+# Cleanup the image
+#RUN apt-get clean
+
+# Uncomment to cleanup even more
+#RUN rm -rf /usr/src/*

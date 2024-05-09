@@ -1,0 +1,34 @@
+# NOTICE: this file will not install all freeswitch modules
+FROM debian:bullseye
+
+# MAINTAINER jincy <jincy@zenitera.com>
+
+ADD libks.tar.gz /usr/src/libs/
+ADD sofia-sip.tar.gz /usr/src/libs/
+ADD spandsp.tar.gz /usr/src/libs/
+ADD signalwire-c.tar.gz /usr/src/libs/
+
+RUN sed -i 's/deb.debian.org/mirrors.ustc.edu.cn/g' /etc/apt/sources.list && apt-get update && DEBIAN_FRONTEND=noninteractive apt-get -yq install \
+    build-essential cmake automake autoconf 'libtool-bin|libtool' pkg-config \
+    libssl-dev zlib1g-dev libdb-dev unixodbc-dev libncurses5-dev libexpat1-dev libgdbm-dev libgdbm-compat-dev bison erlang-dev libtpl-dev libtiff5-dev uuid-dev \
+    libpcre3-dev libedit-dev libsqlite3-dev libcurl4-openssl-dev nasm \
+    libogg-dev libspeex-dev libspeexdsp-dev \
+    libldns-dev \
+    python3-dev \
+    libavformat-dev libswscale-dev libavresample-dev \
+    liblua5.2-dev \
+    libopus-dev \
+    libpq-dev \
+    libsndfile1-dev libflac-dev libogg-dev libvorbis-dev \
+    libopusfile-dev \
+    libperl-dev \
+    libshout3-dev libmpg123-dev \
+    lsb-release git gzip \
+&& cd /usr/src/libs/libks && cmake . -DCMAKE_INSTALL_PREFIX=/usr -DWITH_LIBBACKTRACE=1 && make install && make clean \
+ && cd /usr/src/libs/sofia-sip &&./bootstrap.sh \
+ && ./configure CFLAGS="-g -ggdb" --with-pic --with-glib=no --without-doxygen --disable-stun --prefix=/usr \
+ && make -j`nproc --all` && make install && make clean \
+ && cd /usr/src/libs/spandsp && ./bootstrap.sh \
+ && ./configure CFLAGS="-g -ggdb" --with-pic --prefix=/usr && make -j`nproc --all` \
+ && make install && make clean \
+ && cd /usr/src/libs/signalwire-c && PKG_CONFIG_PATH=/usr/lib/pkgconfig cmake . -DCMAKE_INSTALL_PREFIX=/usr && make install && make clean && rm -fr /usr/src/libs/* && apt-get clean
